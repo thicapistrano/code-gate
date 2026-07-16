@@ -1,0 +1,25 @@
+# Environment — contains tokens and passwords, never commit
+.env
+
+# SonarScanner cache/work directories
+.sonar/
+.scannerwork/
+.sonarqube/
+
+# Logs
+*.log
+logs/
+
+# Docker override files (local customizations)
+docker-compose.override.yml
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

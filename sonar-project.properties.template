@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SonarQube Project Configuration — copy this file to your project root as
+# sonar-project.properties and adjust to your needs.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Unique key for this project (lowercase, alphanumeric, dots, dashes, underscores)
+sonar.projectKey=my-project-key
+sonar.projectName=My Project Name
+sonar.projectVersion=1.0
+
+# Source paths (comma-separated, relative to this file)
+sonar.sources=.
+
+# Encoding
+sonar.sourceEncoding=UTF-8
+
+# Exclusions — add patterns for generated code, dependencies, binaries
+sonar.exclusions=\
+  **/node_modules/**,\
+  **/.git/**,\
+  **/dist/**,\
+  **/build/**,\
+  **/target/**,\
+  **/__pycache__/**,\
+  **/*.min.js,\
+  **/vendor/**,\
+  **/.next/**,\
+  **/coverage/**
+
+# Test paths (optional — improves coverage reporting)
+# sonar.tests=src/test
+# sonar.test.inclusions=**/*Test.java,**/*.test.ts,**/*.spec.ts
+
+# Coverage report paths (optional)
+# sonar.python.coverage.reportPaths=coverage.xml
+# sonar.javascript.lcov.reportPaths=coverage/lcov.info
+# sonar.java.binaries=target/classes
+
+# SonarQube server (overridden by analyze.sh)
+sonar.host.url=http://localhost:9000
+# sonar.token=your-token-here
