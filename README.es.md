@@ -115,7 +115,7 @@ make analyze DIR=/ruta/al/proyecto
 ## Estructura de Archivos
 
 ```
-analise_de_codigo/
+code-gate/
 ├── docker-compose.yml                  # Servicios SonarQube + PostgreSQL
 ├── analyze.sh                          # Runner de análisis
 ├── setup.sh                            # Helper de configuración inicial

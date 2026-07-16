@@ -29,14 +29,15 @@ Seu projeto local
 
 ## Pré-requisitos
 
-| Ferramenta | Versão | Observação |
-|---|---|---|
-| Docker | 20+ | [Instalar Docker](https://docs.docker.com/get-docker/) |
-| Docker Compose | v2+ | Incluído no Docker Desktop; no Linux: `sudo apt install docker-compose-plugin` |
-| `curl` | qualquer | Pré-instalado na maioria das distros |
-| `make` | qualquer | `sudo apt install make` |
+| Ferramenta     | Versão   | Observação                                                                     |
+| -------------- | -------- | ------------------------------------------------------------------------------ |
+| Docker         | 20+      | [Instalar Docker](https://docs.docker.com/get-docker/)                         |
+| Docker Compose | v2+      | Incluído no Docker Desktop; no Linux: `sudo apt install docker-compose-plugin` |
+| `curl`         | qualquer | Pré-instalado na maioria das distros                                           |
+| `make`         | qualquer | `sudo apt install make`                                                        |
 
 > **Requisito do kernel Linux** — o SonarQube exige `vm.max_map_count >= 524288`. Se o container parar com erro do Elasticsearch, execute:
+>
 > ```bash
 > sudo sysctl -w vm.max_map_count=524288
 > # Para tornar permanente:
@@ -114,7 +115,7 @@ make analyze DIR=/caminho/para/projeto
 ## Estrutura de Arquivos
 
 ```
-analise_de_codigo/
+code-gate/
 ├── docker-compose.yml                  # Serviços SonarQube + PostgreSQL
 ├── analyze.sh                          # Runner de análise
 ├── setup.sh                            # Helper de configuração inicial
@@ -131,11 +132,11 @@ analise_de_codigo/
 
 ## Variáveis de Ambiente
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `SONARQUBE_URL` | `http://localhost:9000` | URL base do SonarQube |
-| `SONARQUBE_TOKEN` | _(vazio)_ | Token de autenticação — gerado pelo `make setup` e salvo no `.env` |
-| `SONARQUBE_ADMIN_PASSWORD` | `Admin@123` | Senha do admin definida durante o `make setup` |
+| Variável                   | Padrão                  | Descrição                                                          |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------ |
+| `SONARQUBE_URL`            | `http://localhost:9000` | URL base do SonarQube                                              |
+| `SONARQUBE_TOKEN`          | _(vazio)_               | Token de autenticação — gerado pelo `make setup` e salvo no `.env` |
+| `SONARQUBE_ADMIN_PASSWORD` | `Admin@123`             | Senha do admin definida durante o `make setup`                     |
 
 As variáveis são lidas automaticamente do arquivo `.env` pelo `analyze.sh`. Copie `.env.example` para `.env` para personalizar.
 
@@ -143,17 +144,17 @@ As variáveis são lidas automaticamente do arquivo `.env` pelo `analyze.sh`. Co
 
 ## Referência do Makefile
 
-| Comando | Descrição |
-|---|---|
-| `make start` | Inicia o SonarQube e o PostgreSQL |
-| `make stop` | Para todos os containers |
-| `make restart` | Reinicia o container do SonarQube |
-| `make setup` | Setup inicial (senha + token) |
-| `make analyze DIR=<caminho>` | Executa a análise em um projeto |
-| `make logs` | Acompanha os logs do SonarQube |
-| `make status` | Exibe o status do sistema em JSON |
-| `make open` | Abre o dashboard no browser |
-| `make clean` | **Apaga todos os dados** (containers + volumes) |
+| Comando                      | Descrição                                       |
+| ---------------------------- | ----------------------------------------------- |
+| `make start`                 | Inicia o SonarQube e o PostgreSQL               |
+| `make stop`                  | Para todos os containers                        |
+| `make restart`               | Reinicia o container do SonarQube               |
+| `make setup`                 | Setup inicial (senha + token)                   |
+| `make analyze DIR=<caminho>` | Executa a análise em um projeto                 |
+| `make logs`                  | Acompanha os logs do SonarQube                  |
+| `make status`                | Exibe o status do sistema em JSON               |
+| `make open`                  | Abre o dashboard no browser                     |
+| `make clean`                 | **Apaga todos os dados** (containers + volumes) |
 
 ---
 
