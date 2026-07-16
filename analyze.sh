@@ -9,7 +9,7 @@ if [ -f "$(dirname "${BASH_SOURCE[0]}")/.env" ]; then
   set +o allexport
 fi
 
-SONARQUBE_URL="${SONARQUBE_URL:-http://localhost:9000}"
+SONARQUBE_URL="${SONARQUBE_URL:-http://localhost:9020}"
 SONARQUBE_TOKEN="${SONARQUBE_TOKEN:-}"
 PROJECT_KEY=""
 PROJECT_NAME=""
@@ -30,7 +30,7 @@ usage() {
   echo -e "  -k  SonarQube project key      (default: directory name, lowercase)"
   echo -e "  -n  SonarQube project name     (default: directory name)"
   echo -e "  -t  SonarQube token            (or set SONARQUBE_TOKEN env var / .env)"
-  echo -e "  -s  SonarQube URL              (default: http://localhost:9000)"
+  echo -e "  -s  SonarQube URL              (default: http://localhost:9020)"
   echo -e "  -h  Show this help"
   echo ""
   echo -e "Examples:"

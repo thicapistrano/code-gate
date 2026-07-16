@@ -1,4 +1,4 @@
-SONARQUBE_URL ?= http://localhost:9000
+SONARQUBE_URL ?= http://localhost:9020
 
 .DEFAULT_GOAL := help
 

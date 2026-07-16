@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SONARQUBE_URL="${SONARQUBE_URL:-http://localhost:9000}"
+SONARQUBE_URL="${SONARQUBE_URL:-http://localhost:9020}"
 ADMIN_USER="admin"
 ADMIN_PASS_DEFAULT="admin"
-ADMIN_PASS_NEW="${SONARQUBE_ADMIN_PASSWORD:-Admin@123}"
+# SonarQube 10.x requires >= 12 chars with uppercase, lowercase, digit and special char
+ADMIN_PASS_NEW="${SONARQUBE_ADMIN_PASSWORD:-Admin@12345678}"
 TOKEN_NAME="local-analyzer-$(date +%Y%m%d)"
 
 RED='\033[0;31m'
@@ -35,21 +36,30 @@ echo -e "\n${GREEN}SonarQube is ready!${NC}\n"
 
 # ── Change default admin password ───────────────────────────────────────────
 echo -e "Updating admin password..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+CHANGE_BODY=$(curl -s -o - -w "\nHTTP_%{http_code}" \
   -u "${ADMIN_USER}:${ADMIN_PASS_DEFAULT}" \
   -X POST "${SONARQUBE_URL}/api/users/change_password" \
-  -d "login=${ADMIN_USER}&password=${ADMIN_PASS_NEW}&previousPassword=${ADMIN_PASS_DEFAULT}" || true)
+  -d "login=${ADMIN_USER}&password=${ADMIN_PASS_NEW}&previousPassword=${ADMIN_PASS_DEFAULT}" 2>/dev/null || true)
+HTTP_CODE=$(echo "${CHANGE_BODY}" | tail -1 | grep -o '[0-9]*$')
 
 case "$HTTP_CODE" in
-  204) echo -e "${GREEN}Password updated successfully.${NC}" ;;
-  401) echo -e "${YELLOW}Password was already changed. Continuing...${NC}" ;;
-  *)   echo -e "${YELLOW}Could not change password (HTTP ${HTTP_CODE}). Continuing...${NC}" ;;
+  204) echo -e "${GREEN}Password updated successfully.${NC}"
+       CURRENT_PASS="${ADMIN_PASS_NEW}" ;;
+  401) echo -e "${YELLOW}Default password already changed — trying new password directly.${NC}"
+       CURRENT_PASS="${ADMIN_PASS_NEW}" ;;
+  400) echo -e "${RED}Password rejected (HTTP 400). Possible policy violation:${NC}"
+       echo "${CHANGE_BODY}" | head -1
+       echo -e "${RED}Set a custom password (min 12 chars, upper+lower+digit+special):${NC}"
+       echo -e "  ${YELLOW}SONARQUBE_ADMIN_PASSWORD='YourPass@2024' make setup${NC}"
+       exit 1 ;;
+  *)   echo -e "${YELLOW}Could not change password (HTTP ${HTTP_CODE}). Trying current password anyway.${NC}"
+       CURRENT_PASS="${ADMIN_PASS_NEW}" ;;
 esac
 
 # ── Generate analysis token ─────────────────────────────────────────────────
 echo -e "\nGenerating analysis token '${TOKEN_NAME}'..."
 TOKEN_RESPONSE=$(curl -sf \
-  -u "${ADMIN_USER}:${ADMIN_PASS_NEW}" \
+  -u "${ADMIN_USER}:${CURRENT_PASS}" \
   -X POST "${SONARQUBE_URL}/api/user_tokens/generate" \
   -d "name=${TOKEN_NAME}" 2>/dev/null || true)
 

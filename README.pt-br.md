@@ -18,10 +18,10 @@ Seu projeto local
  SonarQube (Docker)   ← persiste os resultados no PostgreSQL
        │
        ▼
-  Dashboard no browser ← http://localhost:9000
+  Dashboard no browser ← http://localhost:9020
 ```
 
-1. **Docker Compose** sobe o SonarQube Community + PostgreSQL localmente na porta `9000`.
+1. **Docker Compose** sobe o SonarQube Community + PostgreSQL localmente na porta `9020`.
 2. **`analyze.sh`** inicia a imagem oficial `sonar-scanner-cli` do Docker, monta seu projeto e envia os resultados para o SonarQube.
 3. Você revisa os problemas encontrados no dashboard antes de criar o PR.
 
@@ -64,7 +64,7 @@ make analyze DIR=/home/usuario/meu-projeto
 
 # 5. Abra o dashboard
 make open
-# ou acesse http://localhost:9000
+# ou acesse http://localhost:9020
 ```
 
 ---
@@ -97,7 +97,7 @@ make analyze DIR=/caminho/para/projeto KEY=meu-backend NAME="Meu Backend API"
 Ao finalizar, o terminal exibe o link direto para o dashboard do projeto:
 
 ```
-View results: http://localhost:9000/dashboard?id=meu-backend
+View results: http://localhost:9020/dashboard?id=meu-backend
 ```
 
 ### Configuração por Projeto
@@ -134,9 +134,9 @@ code-gate/
 
 | Variável                   | Padrão                  | Descrição                                                          |
 | -------------------------- | ----------------------- | ------------------------------------------------------------------ |
-| `SONARQUBE_URL`            | `http://localhost:9000` | URL base do SonarQube                                              |
+| `SONARQUBE_URL`            | `http://localhost:9020` | URL base do SonarQube                                              |
 | `SONARQUBE_TOKEN`          | _(vazio)_               | Token de autenticação — gerado pelo `make setup` e salvo no `.env` |
-| `SONARQUBE_ADMIN_PASSWORD` | `Admin@123`             | Senha do admin definida durante o `make setup`                     |
+| `SONARQUBE_ADMIN_PASSWORD` | `Admin@12345678` | Senha do admin definida durante o `make setup`                     |
 
 As variáveis são lidas automaticamente do arquivo `.env` pelo `analyze.sh`. Copie `.env.example` para `.env` para personalizar.
 
@@ -186,9 +186,9 @@ Reexecute o setup para gerar um novo token:
 make setup
 ```
 
-### Porta 9000 já em uso
+### Porta 9020 já em uso
 
-Edite o `docker-compose.yml` e mude `"9000:9000"` para, por exemplo, `"9001:9000"`, depois atualize o `.env`:
+Edite o `docker-compose.yml` e mude `"9020:9000"` to e.g. `"9021:9000"`, depois atualize o `.env`:
 
 ```
 SONARQUBE_URL=http://localhost:9001
