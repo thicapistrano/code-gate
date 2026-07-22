@@ -2,7 +2,7 @@
 
 Run a full SonarQube analysis against any local project before opening a PR — catch vulnerabilities, code smells, bugs, and duplications without pushing a single line.
 
-> Translations: [Português (BR)](README.pt-br.md) · [Español](README.es.md)
+> Translations: [Português (BR)](docs/README.pt-br.md) · [Español](docs/README.es.md)
 
 ---
 
@@ -91,7 +91,7 @@ make analyze DIR=/path/to/project
 make analyze DIR=/path/to/project KEY=my-backend NAME="My Backend API"
 
 # Using the script directly
-./analyze.sh -p /path/to/project -k my-backend -n "My Backend API"
+./scripts/analyze.sh -p /path/to/project -k my-backend -n "My Backend API"
 ```
 
 After the scan finishes, the terminal prints a direct link to the project dashboard:
@@ -105,7 +105,7 @@ View results: http://localhost:9020/dashboard?id=my-backend
 For finer control (test paths, coverage reports, language-specific settings), copy the template into the target project:
 
 ```bash
-cp sonar-project.properties.template /path/to/project/sonar-project.properties
+cp config/sonar-project.properties.template /path/to/project/sonar-project.properties
 # Edit it, then re-run the analysis
 make analyze DIR=/path/to/project
 ```
@@ -116,16 +116,19 @@ make analyze DIR=/path/to/project
 
 ```
 code-gate/
-├── docker-compose.yml                  # SonarQube + PostgreSQL services
-├── analyze.sh                          # Analysis runner
-├── setup.sh                            # First-time setup helper
-├── Makefile                            # Convenience commands
-├── sonar-project.properties.template  # Project config template
-├── .env.example                        # Environment variable reference
+├── scripts/
+│   ├── analyze.sh                          # Analysis runner
+│   └── setup.sh                            # First-time setup helper
+├── config/
+│   ├── docker-compose.yml                  # SonarQube + PostgreSQL services
+│   └── sonar-project.properties.template  # Project config template
+├── docs/
+│   ├── README.es.md                        # Spanish translation
+│   └── README.pt-br.md                     # Portuguese (BR) translation
+├── .env.example                            # Environment variable reference
 ├── .gitignore
-├── README.md                           # This file (English)
-├── README.es.md                        # Spanish translation
-└── README.pt-br.md                     # Portuguese (BR) translation
+├── Makefile                                # Convenience commands
+└── README.md                               # This file (English)
 ```
 
 ---

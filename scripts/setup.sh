@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 SONARQUBE_URL="${SONARQUBE_URL:-http://localhost:9020}"
 ADMIN_USER="admin"
 ADMIN_PASS_DEFAULT="admin"
@@ -66,16 +67,16 @@ TOKEN_RESPONSE=$(curl -sf \
 if echo "${TOKEN_RESPONSE}" | grep -q '"token"'; then
   TOKEN=$(echo "${TOKEN_RESPONSE}" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
-  # Persist to .env (remove stale entries first)
-  touch .env
-  sed -i '/^SONARQUBE_TOKEN=/d' .env
-  sed -i '/^SONARQUBE_ADMIN_PASSWORD=/d' .env
-  sed -i '/^SONARQUBE_URL=/d' .env
+  # Persist to .env in project root (remove stale entries first)
+  touch "${ROOT_DIR}/.env"
+  sed -i '/^SONARQUBE_TOKEN=/d' "${ROOT_DIR}/.env"
+  sed -i '/^SONARQUBE_ADMIN_PASSWORD=/d' "${ROOT_DIR}/.env"
+  sed -i '/^SONARQUBE_URL=/d' "${ROOT_DIR}/.env"
   {
     echo "SONARQUBE_URL=${SONARQUBE_URL}"
     echo "SONARQUBE_TOKEN=${TOKEN}"
     echo "SONARQUBE_ADMIN_PASSWORD=${ADMIN_PASS_NEW}"
-  } >> .env
+  } >> "${ROOT_DIR}/.env"
 
   echo ""
   echo -e "${GREEN}========================================${NC}"

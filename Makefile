@@ -16,20 +16,20 @@ help: ## Show available commands
 	@echo ""
 
 start: ## Start SonarQube and PostgreSQL
-	docker-compose up -d
+	docker-compose -f config/docker-compose.yml up -d
 	@echo ""
 	@echo "  SonarQube starting at $(SONARQUBE_URL)"
 	@echo "  It may take 60-90 seconds to be fully ready."
 	@echo "  Run 'make setup' once it is up."
 
 stop: ## Stop all containers
-	docker-compose down
+	docker-compose -f config/docker-compose.yml down
 
 restart: ## Restart the SonarQube container
-	docker-compose restart sonarqube
+	docker-compose -f config/docker-compose.yml restart sonarqube
 
 setup: ## First-time setup: wait for readiness, change password, generate token
-	@bash setup.sh
+	@bash scripts/setup.sh
 
 analyze: ## Analyze a project — required: DIR=/path/to/project  optional: KEY= NAME=
 	@if [ -z "$(DIR)" ]; then \
@@ -39,12 +39,12 @@ analyze: ## Analyze a project — required: DIR=/path/to/project  optional: KEY=
 		echo ""; \
 		exit 1; \
 	fi
-	@bash analyze.sh -p "$(DIR)" \
+	@bash scripts/analyze.sh -p "$(DIR)" \
 		$(if $(KEY),-k "$(KEY)") \
 		$(if $(NAME),-n "$(NAME)")
 
 logs: ## Stream SonarQube logs
-	docker-compose logs -f sonarqube
+	docker-compose -f config/docker-compose.yml logs -f sonarqube
 
 status: ## Print SonarQube system status
 	@curl -sf "$(SONARQUBE_URL)/api/system/status" \
@@ -61,4 +61,4 @@ clean: ## Remove all containers AND persistent volumes (data loss!)
 	@echo ""
 	@echo "  \033[31mWARNING: This deletes all SonarQube data and analysis history.\033[0m"
 	@read -p "  Type 'yes' to confirm: " confirm && \
-		[ "$$confirm" = "yes" ] && docker-compose down -v && echo "Done." || echo "Aborted."
+		[ "$$confirm" = "yes" ] && docker-compose -f config/docker-compose.yml down -v && echo "Done." || echo "Aborted."

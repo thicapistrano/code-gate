@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load .env if present
-if [ -f "$(dirname "${BASH_SOURCE[0]}")/.env" ]; then
+# Load .env from project root (one level above scripts/)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+if [ -f "${ROOT_DIR}/.env" ]; then
   # shellcheck disable=SC1091
   set -o allexport
-  source "$(dirname "${BASH_SOURCE[0]}")/.env"
+  source "${ROOT_DIR}/.env"
   set +o allexport
 fi
 
