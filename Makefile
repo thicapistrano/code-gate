@@ -23,13 +23,23 @@ start: ## Start SonarQube and PostgreSQL
 	@echo "  Run 'make setup' once it is up."
 
 stop: ## Stop all containers
-	docker-compose -f config/docker-compose.yml down
+	docker-compose -f config/docker-compose.yml down --remove-orphans
 
 restart: ## Restart the SonarQube container
 	docker-compose -f config/docker-compose.yml restart sonarqube
 
 setup: ## First-time setup: wait for readiness, change password, generate token
 	@bash scripts/setup.sh
+
+init: ## Generate sonar-project.properties for a project — required: DIR=/path/to/project
+	@if [ -z "$(DIR)" ]; then \
+		echo ""; \
+		echo "  \033[31mError: DIR is required.\033[0m"; \
+		echo "  Usage: make init DIR=/path/to/project"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@bash scripts/init-project.sh -p "$(DIR)"
 
 analyze: ## Analyze a project — required: DIR=/path/to/project  optional: KEY= NAME=
 	@if [ -z "$(DIR)" ]; then \

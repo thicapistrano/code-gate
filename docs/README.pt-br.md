@@ -1,8 +1,8 @@
-# # CODE-GATE - Analisador de Código Local com SonarQube
+# CODE-GATE - Analisador de Código Local com SonarQube
 
 Execute uma análise completa do SonarQube em qualquer projeto local antes de abrir um PR — encontre vulnerabilidades, code smells, bugs e duplicações sem subir uma única linha de código.
 
-> Traduções: [English](README.md) · [Español](README.es.md)
+> Traduções: [English](../README.md) · [Español](README.es.md)
 
 ---
 
@@ -91,7 +91,7 @@ make analyze DIR=/caminho/para/projeto
 make analyze DIR=/caminho/para/projeto KEY=meu-backend NAME="Meu Backend API"
 
 # Usando o script diretamente
-./analyze.sh -p /caminho/para/projeto -k meu-backend -n "Meu Backend API"
+./scripts/analyze.sh -p /caminho/para/projeto -k meu-backend -n "Meu Backend API"
 ```
 
 Ao finalizar, o terminal exibe o link direto para o dashboard do projeto:
@@ -102,13 +102,144 @@ View results: http://localhost:9020/dashboard?id=meu-backend
 
 ### Configuração por Projeto
 
-Para controle mais fino (caminhos de testes, relatórios de cobertura, configurações por linguagem), copie o template para o projeto alvo:
+Execute `make init` para detectar automaticamente a linguagem do projeto e gerar um `sonar-project.properties` pronto para uso:
 
 ```bash
-cp sonar-project.properties.template /caminho/para/projeto/sonar-project.properties
-# Edite o arquivo e execute a análise novamente
+make init DIR=/caminho/para/projeto
+```
+
+O script detecta a linguagem pelos arquivos do projeto (`pom.xml`, `go.mod`, `package.json`, etc.) e escreve as propriedades de cobertura corretas para ela. Revise o arquivo gerado, gere o relatório de cobertura e execute a análise:
+
+```bash
 make analyze DIR=/caminho/para/projeto
 ```
+
+Ou copie e edite o template completo manualmente:
+
+```bash
+cp config/sonar-project.properties.template /caminho/para/projeto/sonar-project.properties
+```
+
+---
+
+## Ignorando Arquivos de Teste
+
+O SonarQube trata arquivos de teste separadamente do código de produção. Você pode controlar esse comportamento no `sonar-project.properties`:
+
+```properties
+# Informa ao SonarQube quais diretórios contêm código de teste
+sonar.tests=src/test
+
+# Exclui testes das métricas de qualidade (code smells, duplicação, complexidade)
+# mas mantém o relatório de cobertura
+sonar.coverage.exclusions=**/test/**,**/__tests__/**,**/*Test.*,**/*.test.*,**/*.spec.*
+
+# Exclui arquivos de teste completamente de toda a análise
+# Use isso se NÃO quiser nenhum resultado relacionado a testes no dashboard
+sonar.exclusions=**/test/**,**/__tests__/**,**/*.test.*,**/*.spec.*
+```
+
+Use `sonar.coverage.exclusions` para manter o relatório de cobertura mas ocultar os testes das métricas de qualidade. Use `sonar.exclusions` para ignorá-los completamente.
+
+---
+
+## Cobertura de Código
+
+O SonarQube **não gera** cobertura por conta própria — ele lê um relatório produzido pela sua ferramenta de testes. O fluxo é:
+
+```
+sua ferramenta de teste → gera relatório → sonar-scanner lê → exibe no dashboard
+```
+
+### Passo 1 — Gere o relatório de cobertura
+
+**JavaScript / TypeScript (Jest)**
+```bash
+jest --coverage --coverageReporters=lcov
+# saída: coverage/lcov.info
+```
+
+**Python (pytest-cov)**
+```bash
+pip install pytest-cov
+pytest --cov=src --cov-report=xml
+# saída: coverage.xml
+```
+
+**Java (Maven + JaCoCo)**
+
+Adicione ao `pom.xml`:
+```xml
+<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+  <version>0.8.11</version>
+  <executions>
+    <execution><goals><goal>prepare-agent</goal></goals></execution>
+    <execution>
+      <id>report</id><phase>test</phase>
+      <goals><goal>report</goal></goals>
+    </execution>
+  </executions>
+</plugin>
+```
+```bash
+mvn test
+# saída: target/site/jacoco/jacoco.xml
+```
+
+**Go**
+```bash
+go install github.com/jandelgado/gcov2lcov@latest
+go test ./... -coverprofile=coverage.out
+gcov2lcov -infile=coverage.out -outfile=coverage.lcov
+# saída: coverage.out
+```
+
+**PHP (PHPUnit)**
+
+Adicione ao `phpunit.xml`:
+```xml
+<coverage>
+  <report>
+    <clover outputFile="coverage/clover.xml"/>
+  </report>
+</coverage>
+```
+```bash
+./vendor/bin/phpunit --coverage-clover coverage/clover.xml
+# saída: coverage/clover.xml
+```
+
+### Passo 2 — Aponte o relatório no `sonar-project.properties`
+
+```properties
+# JavaScript / TypeScript
+sonar.javascript.lcov.reportPaths=coverage/lcov.info
+sonar.typescript.lcov.reportPaths=coverage/lcov.info
+
+# Python
+sonar.python.version=3
+sonar.python.coverage.reportPaths=coverage.xml
+
+# Java
+sonar.java.binaries=target/classes
+sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+# Go
+sonar.go.coverage.reportPaths=coverage.out
+
+# PHP
+sonar.php.coverage.reportPaths=coverage/clover.xml
+```
+
+### Passo 3 — Execute a análise
+
+```bash
+make analyze DIR=/caminho/para/projeto
+```
+
+> O painel de cobertura só aparece após o SonarQube receber pelo menos um relatório válido. Se o arquivo de relatório não existir no caminho configurado, o scanner o ignora silenciosamente — confirme que o arquivo foi gerado antes de executar `make analyze`.
 
 ---
 
@@ -116,16 +247,20 @@ make analyze DIR=/caminho/para/projeto
 
 ```
 code-gate/
-├── docker-compose.yml                  # Serviços SonarQube + PostgreSQL
-├── analyze.sh                          # Runner de análise
-├── setup.sh                            # Helper de configuração inicial
-├── Makefile                            # Comandos de conveniência
-├── sonar-project.properties.template  # Template de configuração do projeto
-├── .env.example                        # Referência de variáveis de ambiente
+├── scripts/
+│   ├── analyze.sh                          # Runner de análise
+│   ├── init-project.sh                     # Gerador de configuração do projeto
+│   └── setup.sh                            # Helper de configuração inicial
+├── config/
+│   ├── docker-compose.yml                  # Serviços SonarQube + PostgreSQL
+│   └── sonar-project.properties.template  # Template de configuração do projeto
+├── docs/
+│   ├── README.es.md                        # Tradução em espanhol
+│   └── README.pt-br.md                     # Este arquivo (Português BR)
+├── .env.example                            # Referência de variáveis de ambiente
 ├── .gitignore
-├── README.md                           # Inglês
-├── README.es.md                        # Espanhol
-└── README.pt-br.md                     # Este arquivo (Português BR)
+├── Makefile                                # Comandos de conveniência
+└── README.md                               # Inglês
 ```
 
 ---
@@ -136,7 +271,7 @@ code-gate/
 | -------------------------- | ----------------------- | ------------------------------------------------------------------ |
 | `SONARQUBE_URL`            | `http://localhost:9020` | URL base do SonarQube                                              |
 | `SONARQUBE_TOKEN`          | _(vazio)_               | Token de autenticação — gerado pelo `make setup` e salvo no `.env` |
-| `SONARQUBE_ADMIN_PASSWORD` | `Admin@12345678` | Senha do admin definida durante o `make setup`                     |
+| `SONARQUBE_ADMIN_PASSWORD` | `Admin@12345678`        | Senha do admin definida durante o `make setup`                     |
 
 As variáveis são lidas automaticamente do arquivo `.env` pelo `analyze.sh`. Copie `.env.example` para `.env` para personalizar.
 
@@ -150,6 +285,7 @@ As variáveis são lidas automaticamente do arquivo `.env` pelo `analyze.sh`. Co
 | `make stop`                  | Para todos os containers                        |
 | `make restart`               | Reinicia o container do SonarQube               |
 | `make setup`                 | Setup inicial (senha + token)                   |
+| `make init DIR=<caminho>`    | Gera o sonar-project.properties para um projeto |
 | `make analyze DIR=<caminho>` | Executa a análise em um projeto                 |
 | `make logs`                  | Acompanha os logs do SonarQube                  |
 | `make status`                | Exibe o status do sistema em JSON               |
@@ -170,6 +306,15 @@ make logs
 sudo sysctl -w vm.max_map_count=524288
 ```
 
+### Nome de container já em uso
+
+Um container anterior não foi removido corretamente. Execute:
+
+```bash
+docker rm -f sonarqube sonarqube_db
+make start
+```
+
 ### "SonarQube is not running or not ready"
 
 Aguarde o health check passar (~90 segundos na primeira inicialização):
@@ -188,24 +333,31 @@ make setup
 
 ### Porta 9020 já em uso
 
-Edite o `docker-compose.yml` e mude `"9020:9000"` to e.g. `"9021:9000"`, depois atualize o `.env`:
+Edite `config/docker-compose.yml` e mude `"9020:9000"` para ex. `"9021:9000"`, depois atualize o `.env`:
 
 ```
-SONARQUBE_URL=http://localhost:9001
+SONARQUBE_URL=http://localhost:9021
 ```
+
+### Cobertura não aparece no dashboard
+
+- Confirme que o arquivo de relatório foi gerado antes de executar `make analyze`
+- Verifique se o caminho no `sonar-project.properties` corresponde ao arquivo gerado
+- Execute a análise novamente após corrigir o caminho
 
 ---
 
 ## Fluxo Recomendado Pré-PR
 
 1. Finalize sua feature branch.
-2. Execute `make analyze DIR=<seu-projeto>`.
-3. Corrija todos os problemas do tipo **Blocker** ou **Critical** exibidos no dashboard.
-4. Abra o PR somente após o Quality Gate passar (verde).
+2. Gere o relatório de cobertura com sua ferramenta de testes.
+3. Execute `make analyze DIR=<seu-projeto>`.
+4. Corrija todos os problemas do tipo **Blocker** ou **Critical** exibidos no dashboard.
+5. Abra o PR somente após o Quality Gate passar (verde).
 
 ---
 
 ## Licença
 
-Este projeto é distribuído sob a [Licença MIT](LICENSE).  
+Este projeto é distribuído sob a [Licença MIT](../LICENSE).  
 O SonarQube Community Edition é licenciado sob a [GNU LGPL v3](https://www.gnu.org/licenses/lgpl-3.0.html).

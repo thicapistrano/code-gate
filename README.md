@@ -60,7 +60,7 @@ make start
 make setup
 
 # 4. Analyze any project on your machine
-make analyze DIR=/home/user/my-projects
+make analyze DIR=/home/user/my-project
 
 # 5. Open the dashboard
 make open
@@ -102,13 +102,144 @@ View results: http://localhost:9020/dashboard?id=my-backend
 
 ### Project-Level Configuration
 
-For finer control (test paths, coverage reports, language-specific settings), copy the template into the target project:
+Run `make init` to auto-detect the project language and generate a ready-to-use `sonar-project.properties`:
+
+```bash
+make init DIR=/path/to/project
+```
+
+The script detects the language from marker files (`pom.xml`, `go.mod`, `package.json`, etc.) and writes the correct coverage properties for that language. Review the generated file, generate your coverage report, then run the analysis:
+
+```bash
+make analyze DIR=/path/to/project
+```
+
+Alternatively, copy and edit the full template manually:
 
 ```bash
 cp config/sonar-project.properties.template /path/to/project/sonar-project.properties
-# Edit it, then re-run the analysis
+```
+
+---
+
+## Ignoring Test Files
+
+SonarQube treats test files separately from production code. You can control this behavior in `sonar-project.properties`:
+
+```properties
+# Tell SonarQube which directories contain test code
+sonar.tests=src/test
+
+# Exclude tests from quality metrics (code smells, duplication, complexity)
+# but still allow coverage reporting
+sonar.coverage.exclusions=**/test/**,**/__tests__/**,**/*Test.*,**/*.test.*,**/*.spec.*
+
+# Exclude test files completely from all analysis
+# Use this if you do NOT want any test-related results in the dashboard
+sonar.exclusions=**/test/**,**/__tests__/**,**/*.test.*,**/*.spec.*
+```
+
+Use `sonar.coverage.exclusions` to keep coverage reporting while hiding test files from quality metrics. Use `sonar.exclusions` to ignore them entirely.
+
+---
+
+## Code Coverage
+
+SonarQube does **not** generate coverage on its own — it reads a report produced by your test tool. The flow is:
+
+```
+your test tool → generates report → sonar-scanner reads it → displays in dashboard
+```
+
+### Step 1 — Generate the coverage report
+
+**JavaScript / TypeScript (Jest)**
+```bash
+jest --coverage --coverageReporters=lcov
+# output: coverage/lcov.info
+```
+
+**Python (pytest-cov)**
+```bash
+pip install pytest-cov
+pytest --cov=src --cov-report=xml
+# output: coverage.xml
+```
+
+**Java (Maven + JaCoCo)**
+
+Add to `pom.xml`:
+```xml
+<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+  <version>0.8.11</version>
+  <executions>
+    <execution><goals><goal>prepare-agent</goal></goals></execution>
+    <execution>
+      <id>report</id><phase>test</phase>
+      <goals><goal>report</goal></goals>
+    </execution>
+  </executions>
+</plugin>
+```
+```bash
+mvn test
+# output: target/site/jacoco/jacoco.xml
+```
+
+**Go**
+```bash
+go install github.com/jandelgado/gcov2lcov@latest
+go test ./... -coverprofile=coverage.out
+gcov2lcov -infile=coverage.out -outfile=coverage.lcov
+# output: coverage.out
+```
+
+**PHP (PHPUnit)**
+
+Add to `phpunit.xml`:
+```xml
+<coverage>
+  <report>
+    <clover outputFile="coverage/clover.xml"/>
+  </report>
+</coverage>
+```
+```bash
+./vendor/bin/phpunit --coverage-clover coverage/clover.xml
+# output: coverage/clover.xml
+```
+
+### Step 2 — Point the report in `sonar-project.properties`
+
+```properties
+# JavaScript / TypeScript
+sonar.javascript.lcov.reportPaths=coverage/lcov.info
+sonar.typescript.lcov.reportPaths=coverage/lcov.info
+
+# Python
+sonar.python.version=3
+sonar.python.coverage.reportPaths=coverage.xml
+
+# Java
+sonar.java.binaries=target/classes
+sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+# Go
+sonar.go.coverage.reportPaths=coverage.out
+
+# PHP
+sonar.php.coverage.reportPaths=coverage/clover.xml
+```
+
+### Step 3 — Run the analysis
+
+```bash
 make analyze DIR=/path/to/project
 ```
+
+> The coverage panel only appears after SonarQube receives at least one valid report. If the report file is missing, the scanner silently skips it — confirm the file was generated before running `make analyze`.
 
 ---
 
@@ -118,6 +249,7 @@ make analyze DIR=/path/to/project
 code-gate/
 ├── scripts/
 │   ├── analyze.sh                          # Analysis runner
+│   ├── init-project.sh                     # Project config generator
 │   └── setup.sh                            # First-time setup helper
 ├── config/
 │   ├── docker-compose.yml                  # SonarQube + PostgreSQL services
@@ -153,6 +285,7 @@ Variables are read from `.env` automatically by `analyze.sh`. Copy `.env.example
 | `make stop`               | Stop all containers                         |
 | `make restart`            | Restart SonarQube container                 |
 | `make setup`              | First-time setup (password + token)         |
+| `make init DIR=<path>`    | Generate sonar-project.properties for a project |
 | `make analyze DIR=<path>` | Run analysis on a project                   |
 | `make logs`               | Stream SonarQube logs                       |
 | `make status`             | Print system status JSON                    |
@@ -173,6 +306,15 @@ make logs
 sudo sysctl -w vm.max_map_count=524288
 ```
 
+### Container name already in use
+
+A previous container was not properly removed. Run:
+
+```bash
+docker rm -f sonarqube sonarqube_db
+make start
+```
+
 ### "SonarQube is not running or not ready"
 
 Wait for the health check to pass (~90 seconds on the first start):
@@ -191,20 +333,27 @@ make setup
 
 ### Port 9020 already in use
 
-Edit `docker-compose.yml` and change `"9020:9000"` to e.g. `"9021:9000"`, then update `.env`:
+Edit `config/docker-compose.yml` and change `"9020:9000"` to e.g. `"9021:9000"`, then update `.env`:
 
 ```
-SONARQUBE_URL=http://localhost:9001
+SONARQUBE_URL=http://localhost:9021
 ```
+
+### Coverage not showing in the dashboard
+
+- Confirm the report file was generated before running `make analyze`
+- Check that the path in `sonar-project.properties` matches the actual output file
+- Re-run the analysis after fixing the path
 
 ---
 
 ## Recommended Pre-PR Workflow
 
 1. Finish your feature branch.
-2. Run `make analyze DIR=<your-project>`.
-3. Fix any **Blocker** or **Critical** issues shown in the dashboard.
-4. Open the PR only after the Quality Gate passes (green).
+2. Generate the coverage report with your test tool.
+3. Run `make analyze DIR=<your-project>`.
+4. Fix any **Blocker** or **Critical** issues shown in the dashboard.
+5. Open the PR only after the Quality Gate passes (green).
 
 ---
 

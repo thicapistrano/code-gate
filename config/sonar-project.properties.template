@@ -3,18 +3,13 @@
 # sonar-project.properties and adjust to your needs.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Unique key for this project (lowercase, alphanumeric, dots, dashes, underscores)
 sonar.projectKey=my-project-key
 sonar.projectName=My Project Name
 sonar.projectVersion=1.0
-
-# Source paths (comma-separated, relative to this file)
 sonar.sources=.
-
-# Encoding
 sonar.sourceEncoding=UTF-8
 
-# Exclusions — add patterns for generated code, dependencies, binaries
+# ─── Exclusions ───────────────────────────────────────────────────────────────
 sonar.exclusions=\
   **/node_modules/**,\
   **/.git/**,\
@@ -27,15 +22,86 @@ sonar.exclusions=\
   **/.next/**,\
   **/coverage/**
 
-# Test paths (optional — improves coverage reporting)
+# ─── Test files ───────────────────────────────────────────────────────────────
 # sonar.tests=src/test
-# sonar.test.inclusions=**/*Test.java,**/*.test.ts,**/*.spec.ts
+# sonar.test.inclusions=**/*Test.*,**/*.test.*,**/*.spec.*
+# sonar.coverage.exclusions=**/test/**,**/__tests__/**,**/*Test.*,**/*.test.*,**/*.spec.*
 
-# Coverage report paths (optional)
-# sonar.python.coverage.reportPaths=coverage.xml
+# ─────────────────────────────────────────────────────────────────────────────
+# COVERAGE EXAMPLES — uncomment the block for your language
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─── JavaScript / TypeScript (Jest) ──────────────────────────────────────────
+# Generate report:
+#   jest --coverage --coverageReporters=lcov
+#   output: coverage/lcov.info
+#
 # sonar.javascript.lcov.reportPaths=coverage/lcov.info
-# sonar.java.binaries=target/classes
+# sonar.typescript.lcov.reportPaths=coverage/lcov.info
+# sonar.tests=src
+# sonar.test.inclusions=**/*.test.js,**/*.spec.js,**/*.test.ts,**/*.spec.ts
 
+# ─── Python (pytest-cov) ─────────────────────────────────────────────────────
+# Generate report:
+#   pip install pytest-cov
+#   pytest --cov=src --cov-report=xml
+#   output: coverage.xml
+#
+# sonar.python.version=3
+# sonar.python.coverage.reportPaths=coverage.xml
+# sonar.tests=tests
+# sonar.test.inclusions=**/test_*.py,**/*_test.py
+
+# ─── Java (Maven + JaCoCo) ───────────────────────────────────────────────────
+# Add to pom.xml:
+#   <plugin>
+#     <groupId>org.jacoco</groupId>
+#     <artifactId>jacoco-maven-plugin</artifactId>
+#     <version>0.8.11</version>
+#     <executions>
+#       <execution><goals><goal>prepare-agent</goal></goals></execution>
+#       <execution>
+#         <id>report</id><phase>test</phase>
+#         <goals><goal>report</goal></goals>
+#       </execution>
+#     </executions>
+#   </plugin>
+# Generate report:
+#   mvn test
+#   output: target/site/jacoco/jacoco.xml
+#
+# sonar.java.binaries=target/classes
+# sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+# sonar.tests=src/test/java
+# sonar.test.inclusions=**/*Test.java,**/*IT.java
+
+# ─── Go (go test + gcov2lcov) ────────────────────────────────────────────────
+# Generate report:
+#   go install github.com/jandelgado/gcov2lcov@latest
+#   go test ./... -coverprofile=coverage.out
+#   gcov2lcov -infile=coverage.out -outfile=coverage.lcov
+#   output: coverage.lcov
+#
+# sonar.go.coverage.reportPaths=coverage.out
+# sonar.tests=.
+# sonar.test.inclusions=**/*_test.go
+
+# ─── PHP (PHPUnit + phpunit.xml) ─────────────────────────────────────────────
+# Add to phpunit.xml:
+#   <coverage>
+#     <report>
+#       <clover outputFile="coverage/clover.xml"/>
+#     </report>
+#   </coverage>
+# Generate report:
+#   ./vendor/bin/phpunit --coverage-clover coverage/clover.xml
+#   output: coverage/clover.xml
+#
+# sonar.php.coverage.reportPaths=coverage/clover.xml
+# sonar.tests=tests
+# sonar.test.inclusions=**/*Test.php,**/Test*.php
+
+# ─────────────────────────────────────────────────────────────────────────────
 # SonarQube server (overridden by analyze.sh)
 sonar.host.url=http://localhost:9000
 # sonar.token=your-token-here
